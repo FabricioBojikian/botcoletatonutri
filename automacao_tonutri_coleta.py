@@ -15,13 +15,72 @@ tag_boton = "datametria.io_boton"
 tag_imput_xpath = '/html/body/form/p[1]/input'
 value_imput_xpath = '/html/body/form/p[2]/input'
 store_imput_xpath = '/html/body/form/input[2]'
+
 running = True
+falha_ocorrida = False
 
 def log_error(message):
     with open("error_log.txt", "a") as log_file:
         log_file.write(f"{datetime.now()}: {message}\n")
 
-# --------------------------------------------------------- Salvar NF no banco de dados
+def enviar_confirmacao():
+    chrome_options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(url_store)
+    time.sleep(1)
+
+    while True:
+        try:
+            driver.find_element(By.XPATH, tag_imput_xpath).send_keys(tag_store)
+            driver.implicitly_wait(10)
+            driver.find_element(By.XPATH, value_imput_xpath).send_keys("1")
+            driver.implicitly_wait(10)
+            driver.find_element(By.XPATH, store_imput_xpath).click()
+            driver.implicitly_wait(10)
+            driver.quit()
+            time.sleep(1)
+            break
+
+        except NoSuchElementException:
+            print("---------------------------------------------------------------------------")
+            print("Falha no envio da confirmação, tentando novamente...")
+            driver.quit()
+            time.sleep(1)
+            chrome_options = webdriver.ChromeOptions()
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(url_store)
+            time.sleep(1)
+
+def falha_processo():
+    global falha_ocorrida
+    falha_ocorrida = True
+    chrome_options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(url_store)
+    time.sleep(1)
+
+    while True:
+        try:
+            driver.find_element(By.XPATH, tag_imput_xpath).send_keys(tag_store)
+            driver.implicitly_wait(10)
+            driver.find_element(By.XPATH, value_imput_xpath).send_keys("2")
+            driver.implicitly_wait(10)
+            driver.find_element(By.XPATH, store_imput_xpath).click()
+            driver.implicitly_wait(10)
+            driver.quit()
+            time.sleep(1)
+            break
+
+        except NoSuchElementException:
+            print("---------------------------------------------------------------------------")
+            print("Falha no envio da confirmação, tentando novamente...")
+            driver.quit()
+            time.sleep(1)
+            chrome_options = webdriver.ChromeOptions()
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(url_store)
+            time.sleep(1)
+
 def salvar_bd(n_nf, n_oc, n_bol):
     try:
         data = {
@@ -29,9 +88,9 @@ def salvar_bd(n_nf, n_oc, n_bol):
             "n_oc": [n_oc],
             "n_bol": [n_bol],
             "processado": [False],
-            "erro_processamento": [False] #incluído campo adicional para indicar erro no processamento da OC
+            "erro_processamento": [False]
         }
-        
+
         dataframe = pd.DataFrame(data)
         db = DatabaseBigQuery()
         db.data_load(dataframe=dataframe, destination_table="notas_tonutri", replace=False)
@@ -41,10 +100,10 @@ def salvar_bd(n_nf, n_oc, n_bol):
         error_message = f"Erro ao salvar no banco de dados: {str(e)}"
         print(error_message)
         log_error(error_message)
+        falha_processo()
 
-# ------------------------------------------------ Enviar confirmação para o aplicativo
 def main():
-    global running
+    global running, falha_ocorrida
 
     url_get = "http://tinywebdb.appinventor.mit.edu/getvalue"
     old_n_oc = None
@@ -79,7 +138,6 @@ def main():
             driver.get(url_store)
             time.sleep(1)
 
-    # ------------------------------------------ Loop para coletar um novo codigo de barras
     print("---------------------------------------------------------------------------")
     print("Coletando codigos de barras...")
     print(" ")
@@ -103,58 +161,36 @@ def main():
                     print(f" - Ultima OC: {json_valido['OC']}")
                     print(" ")
 
-                    # --------------------------------------------- Loop de verificação de nova nota fiscal
                     if old_n_oc != json_valido['OC']:
                         if old_n_oc is not None:
                             print("---------------------------------------------------------------------------")
                             print("Salvando NF no banco de dados...")
-                            
+
                             salvar_bd(json_valido['NF'], json_valido['OC'], json_valido['BOLETOS'])
 
-                            print("---------------------------------------------------------------------------")
-                            print("Enviando confirmação para o aplicativo...")
-
-                            chrome_options = webdriver.ChromeOptions()
-                            driver = webdriver.Chrome(options=chrome_options)
-                            driver.get(url_store)
-                            time.sleep(1)
-
-                            # ------------------------------------------------ Enviar confirmação para o aplicativo
-                            while True:
-                                try:
-                                    driver.find_element(By.XPATH, tag_imput_xpath).send_keys(tag_store)
-                                    driver.implicitly_wait(10)
-                                    driver.find_element(By.XPATH, value_imput_xpath).send_keys("1")
-                                    driver.implicitly_wait(10)
-                                    driver.find_element(By.XPATH, store_imput_xpath).click()
-                                    driver.implicitly_wait(10)
-                                    driver.quit()
-                                    time.sleep(1)
-                                    break
-
-                                except NoSuchElementException:
-                                    print("---------------------------------------------------------------------------")
-                                    print("Falha no envio da confirmação, tentando novamente...")
-                                    driver.quit()
-                                    time.sleep(1)
-                                    chrome_options = webdriver.ChromeOptions()
-                                    driver = webdriver.Chrome(options=chrome_options)
-                                    driver.get(url_store)
-                                    time.sleep(1)
+                            if not falha_ocorrida:
+                                print("---------------------------------------------------------------------------")
+                                print("Enviando confirmação para o aplicativo...")
+                                enviar_confirmacao()
 
                         old_n_oc = json_valido['OC']
-                    
+
                 except json.JSONDecodeError:
                     print("Deu erro no json!")
-                    print(response.text)
+                    error_message = response.text
+                    print(error_message)
+                    log_error(error_message)
 
                 except IndexError:
                     print("---------------------------------------------------------------------------")
                     print("Índice inválido no JSON")
-                    
+
             else:
                 print("---------------------------------------------------------------------------")
-                print(f"Erro {response.status_code} ao fazer a requisição")
+                error_message = f"Erro {response.status_code} ao fazer a requisição"
+                print(error_message)
+                log_error(error_message)
+                falha_processo()
 
         except requests.ConnectionError:
             print("---------------------------------------------------------------------------")
@@ -166,13 +202,11 @@ def main():
         root.update()
         time.sleep(2)
 
-# ------------------------------------------------------------------------ Parar o loop
 def stop_loop():
     global running
     running = False
     root.destroy()
 
-# -------------------------------------------------------- Configurar a janela do popup
 root = tk.Tk()
 root.title("Automação Tonutri Coleta")
 root.geometry("400x200")
@@ -181,7 +215,6 @@ label.pack(pady=20)
 stop_button = tk.Button(root, text="Parar", font=("Arial", 14), command=stop_loop)
 stop_button.pack(pady=20)
 
-# ----------------------------------------- Confirmar para o aplicativo que o bot parou
 def run_loop():
     main()
     print("---------------------------------------------------------------------------")
