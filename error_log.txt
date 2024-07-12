@@ -10,3 +10,4 @@
 2024-07-11 20:49:07.463304: Erro ao salvar no banco de dados: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
 2024-07-12 10:15:05.934814: Erro ao salvar no banco de dados: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
 2024-07-12 10:22:41.470983: Erro ao salvar no banco de dados: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
+2024-07-12 10:26:06.737847: Erro ao salvar no banco de dados: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
