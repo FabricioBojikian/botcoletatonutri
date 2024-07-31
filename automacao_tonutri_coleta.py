@@ -6,21 +6,17 @@ from actions.coleta_log_error import log_error
 from actions.coleta_salvar_nota import salvar_nota
 from actions.coleta_resposta import enviar_ativacao
 
-get_url = "http://tinywebdb.appinventor.mit.edu/getvalue"
-data = {"tag": "datametria.io_codigo_barras"}
-old_n_oc = None
-flag_n_oc = False
-falha_salvar_contador = 0  # Contador para as tentativas de falha
-
 def main():
-    global old_n_oc
-    global falha_salvar_contador
+    get_url = "http://tinywebdb.appinventor.mit.edu/getvalue"
+    data = {"tag": "datametria.io_codigo_barras"}
+    old_n_oc = None
+    ativacao_estado = True
 
     print("---------------------------------------------------------------------------")
     print("Ativando Bot para o aplicativo...")
     print(" ")
 
-    enviar_ativacao()
+    enviar_ativacao(ativacao_estado)
 
     print("Aplicativo notificado!")
     print("---------------------------------------------------------------------------")
@@ -38,6 +34,11 @@ def main():
                     texto_limpo = texto_limpo[1:-1]
                     json_valido = json.loads(texto_limpo)
 
+                    print("Aguardando leitura do aplicativo...")
+                    print(f" - OC recebida: {json_valido['OC']}")
+                    print(f" - Ultima OC: {old_n_oc}")
+                    print(" ")
+
                     if old_n_oc != json_valido['OC']:
                         if old_n_oc is not None:
                             print("---------------------------------------------------------------------------")
@@ -47,24 +48,13 @@ def main():
                             falha_salvar = salvar_nota(json_valido['NF'], json_valido['OC'], json_valido['BOLETOS'])
 
                             if falha_salvar:
-                                old_n_oc = None
-                                falha_salvar_contador += 1
-                                print("Nota não processada!")
+
+                                print("Erro ao salvar notas, favor verificar!")
                                 print(" ")
+                                break
 
-                                if falha_salvar_contador >= 3:
-                                    print("Erro ao salvar notas, favor verificar!")
-                                    break
-
-                            else:
-                                falha_salvar_contador = 0
-                        
                         old_n_oc = json_valido['OC']
-
-                    print("Aguardando leitura do aplicativo...")
-                    print(f" - Ultima OC: {json_valido['OC']}")
-                    print(" ")
-
+                        
                     time.sleep(1)
 
                 except (json.JSONDecodeError, IndexError) as e:

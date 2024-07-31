@@ -14,17 +14,22 @@ tag_imput_xpath = '/html/body/form/p[1]/input'
 value_imput_xpath = '/html/body/form/p[2]/input'
 store_imput_xpath = '/html/body/form/input[2]'
 
-def enviar_ativacao():
+def enviar_ativacao(ativacao_estado):
     chrome_options = webdriver.ChromeOptions()
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(store_url)
     driver.implicitly_wait(10)
 
+    if ativacao_estado:
+        value_imput = "1"
+    else:
+        value_imput = "0"
+
     while True:
         try:
             driver.find_element(By.XPATH, tag_imput_xpath).send_keys(store_tag_ligar)
             driver.implicitly_wait(10)
-            driver.find_element(By.XPATH, value_imput_xpath).send_keys("1")
+            driver.find_element(By.XPATH, value_imput_xpath).send_keys(value_imput)
             driver.implicitly_wait(10)
             driver.find_element(By.XPATH, store_imput_xpath).click()
             driver.implicitly_wait(10)

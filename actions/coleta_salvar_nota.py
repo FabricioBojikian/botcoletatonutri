@@ -10,41 +10,46 @@ from actions.coleta_log_error import *
 from actions.coleta_resposta import *
 
 def salvar_nota(n_nf, n_oc, n_bol):
-    # falha_salvar = False
-    
-    # try:
-    #     data = {
-    #         "n_nf": [n_nf],
-    #         "n_oc": [n_oc],
-    #         "n_bol": [n_bol],
-    #         "processado": [False],
-    #         "erro_processamento": [False]
-    #     }
+    attempts = 0
+    max_attempts = 3
+    falha_salvar = False
 
-    #     dataframe = pd.DataFrame(data)
-    #     db = DatabaseBigQuery()
-    #     db.data_load(dataframe=dataframe, destination_table="notas_tonutri", replace=False)
+    while attempts < max_attempts:
+        try:
+            data = {
+                "n_nf": [n_nf],
+                "n_oc": [n_oc],
+                "n_bol": [n_bol],
+                "processado": [False],
+                "erro_processamento": [False]
+            }
 
-    #     print(f"Dados inseridos com sucesso na tabela destination_table!")
-    #     print(" ")
+            dataframe = pd.DataFrame(data)
+            db = DatabaseBigQuery()
+            db.data_load(dataframe=dataframe, destination_table="notas_tonutri", replace=False)
 
-    #     enviar_confirmacao()
+            print(f"Dados inseridos com sucesso na tabela destination_table!")
+            print(" ")
 
-    # except Exception as e:
-    #     falha_salvar = True
+            enviar_confirmacao()
 
-    #     error_message = f"Erro ao salvar no banco de dados: {str(e)}"
-    #     print(error_message)
-    #     log_error(error_message)
+            return falha_salvar
 
-    #     enviar_falha()
+        except Exception as e:
+            attempts += 1
 
-    falha_salvar = True
+            error_message = f"Erro ao salvar no banco de dados: {str(e)}"
+            print(error_message)
+            log_error(error_message)
 
-    error_message = "Erro ao salvar no banco de dados:"
-    print(error_message)
-    log_error(error_message)
+            time.sleep(10)
 
-    enviar_falha()
+            if attempts == max_attempts:
+                falha_salvar = True
+                ativacao_estado = False
 
-    return falha_salvar
+                enviar_falha()
+                time.sleep(5)
+                enviar_ativacao(ativacao_estado)
+
+                return falha_salvar
