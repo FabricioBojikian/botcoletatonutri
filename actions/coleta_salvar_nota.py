@@ -28,7 +28,7 @@ def salvar_nota(n_nf, n_oc, n_bol):
             db = DatabaseBigQuery()
             db.data_load(dataframe=dataframe, destination_table="notas_tonutri", replace=False)
 
-            print(f"Dados inseridos com sucesso na tabela destination_table!")
+            print("Dados inseridos com sucesso na tabela notas_tonutri!")
             print(" ")
 
             enviar_confirmacao()
@@ -38,9 +38,8 @@ def salvar_nota(n_nf, n_oc, n_bol):
         except Exception as e:
             attempts += 1
 
-            error_message = f"Erro ao salvar no banco de dados: {str(e)}"
-            print(error_message)
-            log_error(error_message)
+            print("Erro ao salvar, tentando novamente em 10 segundos...")
+            print(" ")
 
             time.sleep(10)
 
