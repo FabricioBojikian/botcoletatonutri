@@ -96,7 +96,36 @@ def enviar_falha():
             break
 
         except NoSuchElementException:
-            print("Falha no envio da confirmação, tentando novamente...")
+            print("Falha no envio da falha, tentando novamente...")
+            print(" ")
+
+            driver.quit()
+            time.sleep(1)
+            chrome_options = webdriver.ChromeOptions()
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(store_url)
+            driver.implicitly_wait(10)
+
+def enviar_alerta():
+    chrome_options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(store_url)
+    driver.implicitly_wait(10)
+
+    while True:
+        try:
+            driver.find_element(By.XPATH, tag_imput_xpath).send_keys(store_tag_enviar)
+            driver.implicitly_wait(10)
+            driver.find_element(By.XPATH, value_imput_xpath).send_keys("3")
+            driver.implicitly_wait(10)
+            driver.find_element(By.XPATH, store_imput_xpath).click()
+            driver.implicitly_wait(10)
+            driver.quit()
+            time.sleep(1)
+            break
+
+        except NoSuchElementException:
+            print("Falha no envio do alerta, tentando novamente...")
             print(" ")
 
             driver.quit()
